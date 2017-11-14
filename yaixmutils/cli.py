@@ -17,13 +17,17 @@
 
 import argparse
 import json
+import os.path
+import subprocess
 import sys
+import tempfile
 
 from pyparsing import ParseException
 import yaixm
 import yaml
 
 from .tnp import Tnp, normalise
+from .obstacle import read_obstacles
 
 def convert_tnp():
     parser = argparse.ArgumentParser()
@@ -47,3 +51,38 @@ def convert_tnp():
     yaml.add_representer(dict, yaixm.ordered_map_representer)
     yaml.dump({'airspace': airspace},
                args.yaixm_file, default_flow_style=False)
+
+def convert_obstacles():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("obstacle_xls", help="ENR obstacle XLS data")
+    parser.add_argument("yaml_file", nargs="?",
+                        help="YAML output file, stdout if not specified",
+                        type=argparse.FileType("w"), default=sys.stdout)
+
+    args = parser.parse_args()
+
+    # Using temporary working directory
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # Convert xls to xlsx
+        subprocess.run(["libreoffice",
+             "--convert-to", "xlsx",
+             "--outdir", tmp_dir,
+             args.obstacle_xls], errors=True)
+
+        base_xls = os.path.basename(args.obstacle_xls)
+        base_xlsx = os.path.splitext(base_xls)[0] + ".xlsx"
+        xlsx_name = os.path.join(tmp_dir, base_xlsx)
+
+        # Convert xlsx to CSV
+        csv_name = os.path.join(tmp_dir, "obstacle.csv")
+        subprocess.run(["xlsx2csv",
+                        "--sheetname" , "All", xlsx_name, csv_name],
+                       errors=True)
+
+        obstacles = read_obstacles(open(csv_name))
+
+    # Write to YAML file
+    yaml.add_representer(dict, yaixm.ordered_map_representer)
+    yaml.dump({'obstacle': obstacles},
+              args.yaml_file, default_flow_style=False)
+

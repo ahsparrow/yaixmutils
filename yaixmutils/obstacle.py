@@ -13,6 +13,8 @@ EXCLUDE_AREAS = [[51.3, 51.7, -0.25, 0.1],  # London
                  [53.4, 53.5, -2.3, -2.15]] # Manchester
 
 def dms(latlon):
+    assert len(latlon) == 10 or len(latlon) == 11
+
     s = round(float(latlon[-6:-1]))
     m = int(latlon[-8:-6])
     d = int(latlon[:-8])
@@ -48,17 +50,8 @@ def inside_area(position, areas):
 
     return False
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("obstacle_csv", help="ENR obstacle CSV data",
-                        type=argparse.FileType("r"))
-    parser.add_argument("yaml_file", nargs="?",
-                        help="YAML output file, stdout if not specified",
-                        type=argparse.FileType("w"), default=sys.stdout)
-
-    args = parser.parse_args()
-
-    reader = csv.DictReader(args.obstacle_csv)
+def read_obstacles(csv_file):
+    reader = csv.DictReader(csv_file)
 
     obstacles = []
     for obs in reader:
@@ -91,7 +84,19 @@ if __name__ == '__main__':
                           'elevation': elevation,
                           'position': position})
 
-    print("Number of obstacles = %d" % len(obstacles))
+    return obstacles
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("obstacle_csv", help="ENR obstacle CSV data",
+                        type=argparse.FileType("r"))
+    parser.add_argument("yaml_file", nargs="?",
+                        help="YAML output file, stdout if not specified",
+                        type=argparse.FileType("w"), default=sys.stdout)
+
+    args = parser.parse_args()
+
+    obstacles = read_obstacles(args.obstacle_csv)
 
     # Write to YAML file
     yaml.add_representer(dict, yaixm.ordered_map_representer)
