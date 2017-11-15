@@ -16,6 +16,7 @@
 # along with YAIXM utils.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
+import datetime
 import json
 import os.path
 import subprocess
@@ -29,6 +30,7 @@ import yaml
 from .tnp import Tnp, normalise
 from .obstacle import read_obstacles
 
+# Convert TNP airspace data to nominal YAIXM format
 def convert_tnp():
     parser = argparse.ArgumentParser()
     parser.add_argument("tnp_file", nargs="?",
@@ -52,7 +54,8 @@ def convert_tnp():
     yaml.dump({'airspace': airspace},
                args.yaixm_file, default_flow_style=False)
 
-def convert_obstacles():
+# Convert obstacle data XLS spreadsheet from AIS to YAXIM format
+def convert_obstacle():
     parser = argparse.ArgumentParser()
     parser.add_argument("obstacle_xls", help="ENR obstacle XLS data")
     parser.add_argument("yaml_file", nargs="?",
@@ -86,3 +89,64 @@ def convert_obstacles():
     yaml.dump({'obstacle': obstacles},
               args.yaml_file, default_flow_style=False)
 
+# Get next AIRAC effective date after today
+def get_airac_date():
+    # AIRAC cycle is fixed four week schedule
+    airac_date = datetime.date(2017, 11, 9)
+    today = datetime.date.today()
+    while airac_date < today:
+        airac_date += datetime.timedelta(days=28)
+
+    return airac_date.isoformat() + "T00:00:00Z"
+
+# Convert collection of YAIXM files containing airspace, LOAs and
+# obstacles to single JSON file with release header
+def release():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("yaixm_file", nargs="+",
+                        type=argparse.FileType("r"),
+                        help="Airspace, LOA or obstacle file")
+    parser.add_argument("release_file", help="JSON output file")
+    parser.add_argument("--indent", type=int, default=None,
+                        help="JSON file indentation level (default none)")
+    parser.add_argument("--force", "-f", action="store_true", default=False,
+                        help="Force overwrite of existing release file")
+
+    args = parser.parse_args()
+
+    if args.release_file == "-":
+        release_file = sys.stdout
+    else:
+        try:
+            if args.force:
+                release_file = open(args.release_file, "w")
+            else:
+                try:
+                    release_file = open(args.release_file, "x")
+                except FileExistsError:
+                    print("ERROR: Can't overwrite existing release file")
+                    sys.exit(-1)
+        except PermissionError:
+            print("ERROR: Release file permission denied")
+            sys.exit(-1)
+
+    # Aggregate input files
+    out = {}
+    for f in args.yaixm_file:
+        out.update(yaixm.load(f))
+
+    # Append release header
+    header = {
+        'schema_version': 1,
+        'airac_date': get_airac_date(),
+        'timestamp': datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
+    }
+    out.update({'release': header})
+
+    # Validate final output
+    error = yaixm.validate(out)
+    if error:
+        print(error)
+        sys.exit(-1)
+
+    json.dump(out, release_file, sort_keys=True, indent=args.indent)
