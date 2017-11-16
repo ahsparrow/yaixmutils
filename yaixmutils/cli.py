@@ -107,10 +107,12 @@ def release():
                         type=argparse.FileType("r"),
                         help="Airspace, LOA or obstacle file")
     parser.add_argument("release_file", help="JSON output file")
-    parser.add_argument("--indent", type=int, default=None,
+    parser.add_argument("--indent", "-i", type=int, default=None,
                         help="JSON file indentation level (default none)")
     parser.add_argument("--force", "-f", action="store_true", default=False,
                         help="Force overwrite of existing release file")
+    parser.add_argument("--note", "-n", help="Release note file",
+                        type=argparse.FileType("r"), default=None)
 
     args = parser.parse_args()
 
@@ -141,6 +143,8 @@ def release():
         'airac_date': get_airac_date(),
         'timestamp': datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
     }
+    if args.note:
+        header['note'] = args.note.read()
     out.update({'release': header})
 
     # Validate final output
