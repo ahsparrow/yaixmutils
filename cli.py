@@ -11,6 +11,8 @@ elif script_name == "obstacle":
     cli.convert_obstacle()
 elif script_name == "release":
     cli.release()
+elif script_name == "ils":
+    cli.calc_ils()
 else:
     print("Unrecognised script: " + script_name, file=sys.stderr)
 

@@ -19,10 +19,12 @@ import argparse
 import datetime
 import json
 import os.path
+import re
 import subprocess
 import sys
 import tempfile
 
+from pygeodesy.ellipsoidalVincenty import LatLon
 from pyparsing import ParseException
 import yaixm
 import yaml
@@ -154,3 +156,26 @@ def release():
         sys.exit(-1)
 
     json.dump(out, release_file, sort_keys=True, indent=args.indent)
+
+def calc_ils():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("lat", help="Centre latitude, DMS e.g. 512345N")
+    parser.add_argument("lon", help="Centre longitude, DMS e.g. 0012345W")
+    parser.add_argument("bearing", type=float, help="Runway bearing, degrees")
+    parser.add_argument("radius", type=float, nargs="?", default=2,
+                        help="ATZ radius, in nm (default 2)")
+    args = parser.parse_args()
+
+    lon = yaixm.parse_deg(args.lon)
+    lat = yaixm.parse_deg(args.lat)
+    centre = LatLon(lat, lon)
+
+    bearing = args.bearing + 180
+    radius = args.radius * 1852
+
+    distances = [radius, 8 * 1852, 8 * 1852, radius]
+    bearings = [bearing -3, bearing -3, bearing + 3, bearing + 3]
+
+    for d, b in zip(distances, bearings):
+        p = centre.destination(d, b)
+        print("- %s" % p.toStr(form="sec", prec=0, sep=" "))
