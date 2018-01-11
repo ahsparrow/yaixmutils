@@ -92,12 +92,15 @@ def convert_obstacle():
               args.yaml_file, default_flow_style=False)
 
 # Get next AIRAC effective date after today
-def get_airac_date():
+def get_airac_date(prev=False):
     # AIRAC cycle is fixed four week schedule
     airac_date = datetime.date(2017, 11, 9)
     today = datetime.date.today()
     while airac_date < today:
         airac_date += datetime.timedelta(days=28)
+
+    if prev:
+        airac_date -= datetime.timedelta(days=28)
 
     return airac_date.isoformat() + "T00:00:00Z"
 
@@ -113,6 +116,8 @@ def release():
                         help="JSON file indentation level (default none)")
     parser.add_argument("--force", "-f", action="store_true", default=False,
                         help="Force overwrite of existing release file")
+    parser.add_argument("--prev", "-p", action="store_true", default=False,
+                        help="Use previous AIRAC date")
     parser.add_argument("--note", "-n", help="Release note file",
                         type=argparse.FileType("r"), default=None)
 
@@ -142,7 +147,7 @@ def release():
     # Append release header
     header = {
         'schema_version': 1,
-        'airac_date': get_airac_date(),
+        'airac_date': get_airac_date(args.prev_airac),
         'timestamp': datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
     }
     if args.note:
