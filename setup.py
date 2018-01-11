@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name="yaixmutils",
-    version="0.0.1",
+    version="0.0.2",
     description="YAIXM utilities",
     url="https://github.com/ahsparrow/yaixmutils",
     author="Alan Sparrow",
@@ -19,7 +19,7 @@ setup(
     ],
     keywords=['airspace', 'aixm', 'yaixm'],
     install_requires=["yaixm", "PyYAML", "pyparsing", "pygeodesy"],
-    dependency_links=["git+https://github.com/ahsparrow/yaixm.git#egg=yaixm-999.0.0"],
+    dependency_links=["git+https://github.com/ahsparrow/yaixm.git"],
     packages=find_packages(),
     entry_points={
         'console_scripts': [
