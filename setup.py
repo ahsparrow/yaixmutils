@@ -19,7 +19,7 @@ setup(
     ],
     keywords=['airspace', 'aixm', 'yaixm'],
     install_requires=["yaixm", "PyYAML", "pyparsing", "pygeodesy"],
-    dependency_links=["git+https://github.com/ahsparrow/yaixm.git"],
+    dependency_links=["git+https://github.com/ahsparrow/yaixm.git#egg=yaixm"],
     packages=find_packages(),
     entry_points={
         'console_scripts': [
