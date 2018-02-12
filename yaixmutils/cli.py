@@ -30,7 +30,7 @@ import yaixm
 import yaml
 
 from .tnp import Tnp, normalise
-from .obstacle import read_obstacles
+from .obstacle import make_obstacles
 
 # Convert TNP airspace data to nominal YAIXM format
 def convert_tnp():
@@ -60,6 +60,8 @@ def convert_tnp():
 def convert_obstacle():
     parser = argparse.ArgumentParser()
     parser.add_argument("obstacle_xls", help="ENR obstacle XLS data")
+    parser.add_argument("names", help="CSV file with id, name",
+                        type=argparse.FileType("r"))
     parser.add_argument("yaml_file", nargs="?",
                         help="YAML output file, stdout if not specified",
                         type=argparse.FileType("w"), default=sys.stdout)
@@ -84,7 +86,7 @@ def convert_obstacle():
                         "--sheetname" , "All", xlsx_name, csv_name],
                        errors=True)
 
-        obstacles = read_obstacles(open(csv_name))
+        obstacles = make_obstacles(open(csv_name), args.names)
 
     # Write to YAML file
     yaml.add_representer(dict, yaixm.ordered_map_representer)

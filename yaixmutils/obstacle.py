@@ -3,52 +3,17 @@ import csv
 import math
 import sys
 
-import yaml
-import yaixm
+from yaixm import parse_latlon, dms
 
-MINIMUM_HEIGHT = 600
+def read_names(csv_file):
+    reader = csv.reader(csv_file)
 
-EXCLUDE_AREAS = [[51.3, 51.7, -0.25, 0.1],  # London
-                 [53.5, 55.25, -10, -5.5],  # N Ireland
-                 [53.4, 53.5, -2.3, -2.15]] # Manchester
+    names = {}
+    for x in reader:
+        if len(x) == 2:
+            names[x[0].strip()] = x[1].strip()
 
-def dms(latlon):
-    assert len(latlon) == 10 or len(latlon) == 11
-
-    s = round(float(latlon[-6:-1]))
-    m = int(latlon[-8:-6])
-    d = int(latlon[:-8])
-
-    if s == 60:
-        s = 0
-        m += 1
-
-    if m == 60:
-        m = 0
-        d += 1
-
-    return {'h': latlon[-1].upper(), 'd': d, 'm': m, 's': s}
-
-def parse_position(posn):
-    lat, lon = posn.split()
-    lat_dms = dms(lat)
-    lon_dms = dms(lon)
-
-    lat_str = "{0[d]:02d}{0[m]:02d}{0[s]:02d}{0[h]}".format(lat_dms)
-    lon_str = "{0[d]:03d}{0[m]:02d}{0[s]:02d}{0[h]}".format(lon_dms)
-
-    return lat_str + " " + lon_str
-
-def inside_area(position, areas):
-    lat, lon = position.split()
-    lat = math.degrees(yaixm.radians(lat))
-    lon = math.degrees(yaixm.radians(lon))
-
-    for area in areas:
-        if lat > area[0] and lat < area[1] and lon > area[2] and lon < area[3]:
-            return True
-
-    return False
+    return names
 
 def read_obstacles(csv_file):
     reader = csv.DictReader(csv_file)
@@ -58,48 +23,33 @@ def read_obstacles(csv_file):
         id = [x for x in obs['Designation/Identification'].split()
               if x.startswith('UK')][0]
 
-        # Ignore if height or elevation < MINIMUM_HIEGHT
-        if obs['Height'] != "" and int(obs['Height'].split()[0]) < MINIMUM_HEIGHT:
-            continue
+        typ = obs['Obstacle Type'].split()[0]
 
         if obs['Elevation'] == "Unknown":
             continue
 
         elevation = obs['Elevation'].split()[0] + " ft"
-        if int(elevation.split()[0]) < MINIMUM_HEIGHT:
-            continue
 
-        # Ignore offshore types
-        typ = obs['Obstacle Type'].split()[0]
-        if typ in ["OPH", "PFS", "PPL", "PPP", "TURB-OFF"]:
-            continue
-
-        # Ignore if inside exclude areas
-        position = parse_position(obs['Obstacle Position'])
-        if inside_area(position, EXCLUDE_AREAS):
-            continue
+        lat, lon = parse_latlon(obs['Obstacle Position'])
+        lat_str = "{0[d]:02d}{0[m]:02d}{0[s]:02d}{0[ns]}".format(dms(lat))
+        lon_str = "{0[d]:03d}{0[m]:02d}{0[s]:02d}{0[ew]}".format(dms(lon))
 
         obstacles.append({'id': id,
                           'type': typ,
                           'elevation': elevation,
-                          'position': position})
+                          'position': lat_str + " " + lon_str})
 
     return obstacles
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("obstacle_csv", help="ENR obstacle CSV data",
-                        type=argparse.FileType("r"))
-    parser.add_argument("yaml_file", nargs="?",
-                        help="YAML output file, stdout if not specified",
-                        type=argparse.FileType("w"), default=sys.stdout)
+def make_obstacles(csv_file, titles_file):
+    obstacles = read_obstacles(csv_file)
+    names = read_names(titles_file)
 
-    args = parser.parse_args()
+    # Add named obstacles
+    out = []
+    for obstacle in obstacles:
+        if obstacle['id'] in names:
+            obstacle['name'] = names[obstacle['id']]
+            out.append(obstacle)
 
-    obstacles = read_obstacles(args.obstacle_csv)
-
-    # Write to YAML file
-    yaml.add_representer(dict, yaixm.ordered_map_representer)
-    yaml.dump({'obstacle': obstacles},
-              args.yaml_file, default_flow_style=False)
-
+    return out
