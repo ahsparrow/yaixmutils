@@ -18,6 +18,7 @@
 import argparse
 import datetime
 import json
+import math
 import os.path
 import re
 import subprocess
@@ -186,3 +187,68 @@ def calc_ils():
     for d, b in zip(distances, bearings):
         p = centre.destination(d, b)
         print("- %s" % p.toStr(form="sec", prec=0, sep=" "))
+
+def calc_point():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("lat", help="Centre latitude, DMS e.g. 512345N")
+    parser.add_argument("lon", help="Centre longitude, DMS e.g. 0012345W")
+    parser.add_argument("bearing", type=float, help="Degrees (true)")
+    parser.add_argument("distance", type=float, help="Distance (nm)")
+    args = parser.parse_args()
+
+    lon = yaixm.parse_deg(args.lon)
+    lat = yaixm.parse_deg(args.lat)
+    origin = LatLon(lat, lon)
+
+    dist = args.distance * 1852
+
+    p = origin.destination(dist, args.bearing)
+    print(p.toStr(form="sec", prec=0, sep=" "))
+
+def calc_stub():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("lat", help="Centre latitude, DMS e.g. 512345N")
+    parser.add_argument("lon", help="Centre longitude, DMS e.g. 0012345W")
+    parser.add_argument("bearing", type=float, help="R/W bearing, degrees (true)")
+    parser.add_argument("length", type=float, nargs="?", default=5,
+                        help="Stub length (nm)")
+    parser.add_argument("width", type=float, nargs="?", default=4,
+                        help="Stub width (nm)")
+    parser.add_argument("radius", type=float, nargs="?", default=5,
+                        help="Circle radius (nm)")
+    args = parser.parse_args()
+
+    lon = yaixm.parse_deg(args.lon)
+    lat = yaixm.parse_deg(args.lat)
+    centre = LatLon(lat, lon)
+
+    length = args.length * 1852
+    width = args.width * 1852
+    radius = args.radius * 1852
+
+    # Inner stub
+    theta = math.asin(width / (2 * radius))
+
+    bearing = args.bearing + 180 - math.degrees(theta)
+    p1 = centre.destination(radius, bearing)
+
+    bearing = args.bearing + 180 + math.degrees(theta)
+    p2 = centre.destination(radius, bearing)
+
+    print("Inner:")
+    print(p1.toStr(form="sec", prec=0, sep=" "))
+    print(p2.toStr(form="sec", prec=0, sep=" "))
+
+    # Outer stub
+    dist = math.sqrt((radius + length) ** 2 + (width / 2) **2)
+    theta = math.atan(width / (2 * (radius + length)))
+
+    bearing = args.bearing + 180 + math.degrees(theta)
+    p1 = centre.destination(dist, bearing)
+
+    bearing = args.bearing + 180 - math.degrees(theta)
+    p2 = centre.destination(dist, bearing)
+
+    print("\nOuter:")
+    print(p1.toStr(form="sec", prec=0, sep=" "))
+    print(p2.toStr(form="sec", prec=0, sep=" "))

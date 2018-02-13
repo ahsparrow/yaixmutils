@@ -13,6 +13,10 @@ elif script_name == "release":
     cli.release()
 elif script_name == "ils":
     cli.calc_ils()
+elif script_name == "point":
+    cli.calc_point()
+elif script_name == "stub":
+    cli.calc_stub()
 else:
     print("Unrecognised script: " + script_name, file=sys.stderr)
 
