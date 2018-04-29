@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name="yaixmutils",
-    version="1.0.0",
+    version="1.0.1",
     description="YAIXM utilities",
     url="https://github.com/ahsparrow/yaixmutils",
     author="Alan Sparrow",
