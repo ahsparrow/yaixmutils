@@ -111,14 +111,12 @@ def get_airac_date(prev=False):
 # obstacles to single JSON file with release header
 def release():
     parser = argparse.ArgumentParser()
-    parser.add_argument("yaixm_file", nargs="+",
-                        type=argparse.FileType("r"),
-                        help="Airspace, LOA or obstacle file")
-    parser.add_argument("release_file", help="JSON output file")
+    parser.add_argument("yaixm_dir",
+                        help="YAML input directory")
+    parser.add_argument("release_file", type=argparse.FileType("w"),
+                        help="JSON output file")
     parser.add_argument("--indent", "-i", type=int, default=None,
                         help="JSON file indentation level (default none)")
-    parser.add_argument("--force", "-f", action="store_true", default=False,
-                        help="Force overwrite of existing release file")
     parser.add_argument("--prev", "-p", action="store_true", default=False,
                         help="Use previous AIRAC date")
     parser.add_argument("--note", "-n", help="Release note file",
@@ -126,26 +124,10 @@ def release():
 
     args = parser.parse_args()
 
-    if args.release_file == "-":
-        release_file = sys.stdout
-    else:
-        try:
-            if args.force:
-                release_file = open(args.release_file, "w")
-            else:
-                try:
-                    release_file = open(args.release_file, "x")
-                except FileExistsError:
-                    print("ERROR: Can't overwrite existing release file")
-                    sys.exit(-1)
-        except PermissionError:
-            print("ERROR: Release file permission denied")
-            sys.exit(-1)
-
-    # Aggregate input files
+    # Aggregate YAIXM files
     out = {}
-    for f in args.yaixm_file:
-        out.update(yaixm.load(f))
+    for f in ["airspace", "loa", "obstacle", "rat"]:
+        out.update(yaixm.load(open(os.path.join(args.yaixm_dir, f + ".yaml"))))
 
     # Append release header
     header = {
@@ -153,9 +135,31 @@ def release():
         'airac_date': get_airac_date(args.prev),
         'timestamp': datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
     }
+
+    # Add notes
     if args.note:
         header['note'] = args.note.read()
     out.update({'release': header})
+
+    # Get Git commit
+    try:
+        # Get head revision
+        head = subprocess.run(["git", "rev-parse", "--verify", "-q", "HEAD"],
+                              cwd=args.yaixm_dir, check=True,
+                              stdout=subprocess.PIPE)
+
+        # Check for pending commits
+        diff = subprocess.run(["git", "diff-index", "--quiet", "HEAD", "--"],
+                              cwd=args.yaixm_dir)
+        if diff.returncode:
+            commit = "changed"
+        else:
+            commit = head.stdout.decode("ascii").strip()
+
+    except subprocess.CalledProcessError:
+        commit = "unknown"
+
+    header['commit'] = commit
 
     # Validate final output
     error = yaixm.validate(out)
@@ -163,7 +167,7 @@ def release():
         print(error)
         sys.exit(-1)
 
-    json.dump(out, release_file, sort_keys=True, indent=args.indent)
+    json.dump(out, args.release_file, sort_keys=True, indent=args.indent)
 
 def calc_ils():
     parser = argparse.ArgumentParser()
