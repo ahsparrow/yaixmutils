@@ -3,7 +3,7 @@ YAIXMUTILS
 
 YAIXM is a simplified version of the FAA/EUROCONTOL Aeronautical
 Information Exchange Model (AIXM) using YAML, see
-[GitHub](https://github.com/ahsparrow/yaixm)
+[GitLab](https://gitlab.com/ahsparrow/yaixm)
 
 This project is collection of utilities for working with YAIXM data.
 
@@ -23,7 +23,7 @@ Contributing
 
 I'm Alan Sparrow
 
-YAIXMUTILS is on [GitHub](https://github.com/ahsparrow/yaixmutils).
+YAIXMUTILS is on [GitLab](https://gitlab.com/ahsparrow/yaixmutils).
 
-Please get in touch, via GitHub or otherwise. If you've got something
+Please get in touch, via GitLab or otherwise. If you've got something
 to contribute it would be very welcome.

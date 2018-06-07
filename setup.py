@@ -3,7 +3,7 @@ setup(
     name="yaixmutils",
     version="1.0.1",
     description="YAIXM utilities",
-    url="https://github.com/ahsparrow/yaixmutils",
+    url="https://gitlab.com/ahsparrow/yaixmutils",
     author="Alan Sparrow",
     author_email="yaixmutils@freeflight.org.uk",
     license="GPL",
@@ -19,7 +19,7 @@ setup(
     ],
     keywords=['airspace', 'aixm', 'yaixm'],
     install_requires=["yaixm", "PyYAML", "pyparsing", "pygeodesy"],
-    dependency_links=["git+https://github.com/ahsparrow/yaixm.git#egg=yaixm-1.3.1"],
+    dependency_links=["git+https://gitlab.com/ahsparrow/yaixm.git#egg=yaixm-1.3.1"],
     packages=find_packages(),
     entry_points={
         'console_scripts': [
