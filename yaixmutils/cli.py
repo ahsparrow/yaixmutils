@@ -26,36 +26,10 @@ import sys
 import tempfile
 
 from pygeodesy.ellipsoidalVincenty import LatLon
-from pyparsing import ParseException
 import yaixm
 import yaml
 
-from .tnp import Tnp, normalise
 from .obstacle import make_obstacles
-
-# Convert TNP airspace data to nominal YAIXM format
-def convert_tnp():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("tnp_file", nargs="?",
-                        help="TNP airspace file",
-                        type=argparse.FileType("r"), default=sys.stdin)
-    parser.add_argument("yaixm_file", nargs="?",
-                        help="YAIXM output file, stdout if not specified",
-                        type=argparse.FileType("w"), default=sys.stdout)
-    args = parser.parse_args()
-
-    tnp_parser = Tnp.parser()
-    try:
-        results = tnp_parser.parseFile(args.tnp_file)
-    except ParseException as e:
-        print("No match {0}".format(str(e)))
-
-    airspace = normalise(results)
-
-    # Write to YAML file
-    yaml.add_representer(dict, yaixm.ordered_map_representer)
-    yaml.dump({'airspace': airspace},
-               args.yaixm_file, default_flow_style=False)
 
 # Convert obstacle data XLS spreadsheet from AIS to YAXIM format
 def convert_obstacle():
@@ -126,7 +100,7 @@ def release():
 
     # Aggregate YAIXM files
     out = {}
-    for f in ["airspace", "loa", "obstacle", "rat"]:
+    for f in ["airspace", "loa", "obstacle", "rat", "service"]:
         out.update(yaixm.load(open(os.path.join(args.yaixm_dir, f + ".yaml"))))
 
     # Append release header
