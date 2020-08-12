@@ -230,3 +230,24 @@ def calc_stub():
     print("\nOuter:")
     print(p1.toStr(form="sec", prec=0, sep=" "))
     print(p2.toStr(form="sec", prec=0, sep=" "))
+
+# Check services exist in airspace file
+def check_service():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("service_file", type=argparse.FileType("r"),
+                        help="Service file")
+    parser.add_argument("airspace_file", type=argparse.FileType("r"),
+                        help="Airspace file")
+    args = parser.parse_args()
+
+    service = yaml.safe_load(args.service_file)
+    airspace = yaml.safe_load(args.airspace_file)
+
+    airspace = airspace['airspace']
+    service = service['service']
+
+    ids = [feature['id'] for feature in airspace if feature.get('id')]
+    for s in service:
+        for c in s['controls']:
+            if c not in ids:
+                print("Missing:", c)

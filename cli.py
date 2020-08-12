@@ -15,6 +15,8 @@ elif script_name == "point":
     cli.calc_point()
 elif script_name == "stub":
     cli.calc_stub()
+elif script_name == "check_service":
+    cli.check_service()
 else:
     print("Unrecognised script: " + script_name, file=sys.stderr)
 

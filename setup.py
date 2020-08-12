@@ -24,7 +24,8 @@ setup(
     entry_points={
         'console_scripts': [
             "yaixm_release = yaixmutils.cli:release",
-            "yaixm_convert_obstacle = yaixmutils.cli:convert_obstacle"
+            "yaixm_convert_obstacle = yaixmutils.cli:convert_obstacle",
+            "yaixm_check_service = yaixmutils.cli:check_service"
         ]
     }
 )
